@@ -16,7 +16,6 @@ def get_value(html_string, tag_name, tag_end):
     value_end = html_string.find(tag_end, value_start)
     return str(html_string)[value_start: value_end]
 
-
 # get the HTML-File
 ranking_file = open(ranking_path, 'r', encoding="utf-8")
 file_content = ranking_file.readline()
