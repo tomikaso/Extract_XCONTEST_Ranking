@@ -24,7 +24,7 @@ while file_content:
 
 # parse the content
 while rank < max_rank:
-    # We are looking for this: "<tr id="flight"
+    # We are looking for this: class="pilot"
     if len(get_value(whole_content, 'class="pilot"', "</strong>")) > 10:
         ranking = get_value(whole_content, 'class="pilot"', "</strong>")
         rank += 1
