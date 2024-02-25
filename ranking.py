@@ -1,9 +1,10 @@
 # Get Ranking, (c) Thomas Kamps
 # parses XCONTEST-html and extracts the first 10 places
 from datetime import date
+import time
 today = date.today()
 # Variables
-ranking_path = 'C:/Users/Kunterbunt/Documents/Thomas/DCZO/Ideen/Ranking20240223.html'  # adapt to file location
+ranking_path = 'ranking.html'  # adapt to file location
 max_rank = 10
 rank = 0
 whole_content = ''
@@ -17,6 +18,8 @@ def get_value(html_string, tag_name, tag_end):
     value_start = html_string.find(tag_name)
     value_end = html_string.find(tag_end, value_start)
     return str(html_string)[value_start: value_end]
+# Info for the user
+print('HTML-Sourcecode expectet in file: <ranking.html>')
 
 # Sample the file to one string
 ranking_file = open(ranking_path, 'r', encoding="utf-8")
@@ -66,3 +69,10 @@ while rank < max_rank:
 print('HTML-result. To be copied into CMS:')
 html_output += '</table>'
 print(html_output)
+# write out status
+result_file = open('ranking_result_' + today.strftime("%d%m%Y") + '.html', 'w')
+result_file.write(html_output)
+result_file.close()
+print('result written to: ranking_result_' + today.strftime("%d%m%Y") + '.html')
+# close window after 10 seconds
+time.sleep(10)

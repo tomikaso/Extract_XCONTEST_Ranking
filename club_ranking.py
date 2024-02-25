@@ -1,6 +1,7 @@
 from datetime import date
+import time
 today = date.today()
-ranking_path = 'C:/Users/Kunterbunt/Documents/Thomas/DCZO/Ideen/club_rank.html'  # adapt to file location
+ranking_path = 'club_ranking.html'  # adapt to file location
 max_rank = 10
 rank = 0
 points_sum = 0
@@ -14,6 +15,10 @@ def get_value(html_string, tag_name, tag_end):
     value_start = html_string.find(tag_name)
     value_end = html_string.find(tag_end, value_start)
     return str(html_string)[value_start: value_end]
+
+# Info for the user
+print('HTML-Sourcecode expectet in file: <club_ranking.html>')
+time.sleep(1)
 
 # Sample the file to one string
 ranking_file = open(ranking_path, 'r', encoding="utf-8")
@@ -34,9 +39,9 @@ while rank < max_rank:
 
         # get the length
         points = str(ranking)[ranking.find('class="pts"')+20:len(ranking)]
-        #ranked?
+        # ranked?
         counting=''
-        if  ranking.find('not-ranked') == -1:
+        if ranking.find('not-ranked') == -1:
             counting = 'zählt'
             points_sum += float(points)
 
@@ -49,7 +54,14 @@ while rank < max_rank:
         table_row = '<tr><td>' + str(rank) + '</td><td>' + pilot_name + '</td><td>' + points + ' pts</td><td>'
         table_row += counting + '</td></tr>'
         html_output += table_row
-html_output = '<p>Stand: '+ today.strftime("%d.%m.%Y") + ' Punkte: ' + str(points_sum) + '</p>' + html_output
+html_output = '<p>Stand: ' + today.strftime("%d.%m.%Y") + ' Punkte: ' + str(points_sum) + '</p>' + html_output
 print('HTML-result. To be copied into CMS:')
 html_output += '</table>'
 print(html_output)
+# write out status
+result_file = open('club_ranking_result_' + today.strftime("%Y%m%d") + '.html', 'w')
+result_file.write(html_output)
+result_file.close()
+print('result written to: club_ranking_result' + today.strftime("%Y%m%d") + '.html')
+# close window after 10 seconds
+time.sleep(10)
