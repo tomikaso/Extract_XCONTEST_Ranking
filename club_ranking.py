@@ -54,7 +54,7 @@ while rank < max_rank:
         table_row = '<tr><td>' + str(rank) + '</td><td>' + pilot_name + '</td><td>' + points + ' pts</td><td>'
         table_row += counting + '</td></tr>'
         html_output += table_row
-html_output = '<p>Stand: ' + today.strftime("%d.%m.%Y") + ' Punkte: ' + str(points_sum) + '</p>' + html_output
+html_output = '<p>Stand: ' + today.strftime("%d.%m.%Y") + ' Punkte: ' + str(round(points_sum, 2)) + '</p>' + html_output
 print('HTML-result. To be copied into CMS:')
 html_output += '</table>'
 print(html_output)
