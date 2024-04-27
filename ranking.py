@@ -10,7 +10,7 @@ rank = 0
 whole_content = ''
 flight_type = ''
 html_output = '<p>Stand: ' + today.strftime("%d.%m.%Y") + '<table><tr><td><b>Rang</td><td><b>Pilot</td>'
-html_output += '<td><b>Länge</td><td><b>Datum</td><td><b>Aufgabe</td><td><b>Link Xcontest</td></tr>'
+html_output += '<td><b>Länge</td><td><b>Punkte</td><td><b>Datum</td><td><b>Aufgabe</td><td><b>Link Xcontest</td></tr>'
 # function to get sums out of the status
 def get_value(html_string, tag_name, tag_end):
     if html_string.find(tag_name) == -1:
@@ -44,6 +44,10 @@ while rank < max_rank:
         length = get_value(ranking, 'class="km"', '</strong')
         length_km = str(length)[7 + length.find('strong>'):len(length)]
 
+        # get the points
+        points = get_value(ranking, 'class="pts"', '</strong')
+        points_pts = str(points)[7 + points.find('strong>'):len(points)]
+
         # get the date
         date_rough = get_value(ranking, 'class="full"', '<em>')
         date = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
@@ -61,8 +65,9 @@ while rank < max_rank:
         flight_link = get_value(ranking, 'flight detail" href', '><')
         flight_link = str(flight_link)[21:len(flight_link) - 1]
 
-        print(rank, pilot_name, length_km, date, flight_type, flight_link)
+        print(rank, pilot_name, length_km, points_pts,date, flight_type, flight_link)
         table_row = '<tr><td>' + str(rank) + '</td><td>' + pilot_name + '</td><td>' + length_km + ' km</td><td>'
+        table_row += points_pts + ' pts</td><td>'
         table_row += date + '</td><td>' + flight_type + '</td><td><a href="https://www.xcontest.org'
         table_row += flight_link + ' target="_blank">Details</a></td></tr>'
         html_output += table_row
