@@ -1,4 +1,4 @@
-# Get Ranking, (c) Thomas Kamps with help of Danilo's code
+# Get Ranking, (c) Thomas Kamps with help of Danilo's code. Many thanks Danilo!!!
 # parses XCONTEST-html and extracts the first 10 places
 from datetime import date
 import requests
@@ -7,7 +7,6 @@ import constants
 
 # Parameters
 RADIUS = 600
-DELAY = 3  # How many seconds to sleep in between requests, to avoid rate limiting
 XCONTEST_USER = constants.XC_user
 XCONTEST_PASS = constants.XC_password
 
@@ -17,15 +16,18 @@ styles = '<style> html {font-family: "brandon-grotesque-n7","brandon-grotesque",
          'tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color: skyblue;} ' \
          '.new{background-color: cornsilk;} a:link {color: darkred; text-decoration: none;} </style>'
 ranking_path = 'ranking.html'  # adapt to file location
-max_rank = 10
+max_rank = 20
 rank = 0
 # Variables
 today = date.today()
 
 whole_content = ''
 flight_type = ''
-html_output = styles + '<a>Stand: ' + today.strftime("%d.%m.%Y") + '</a><table><tr><td><b>Rang</td><td><b>Pilotin / Pilot</td>'
+html_output = styles + '<a>Stand: ' + today.strftime(
+    "%d.%m.%Y") + '</a><table><tr><td><b>Rang</td><td><b>Pilotin / Pilot</td>'
 html_output += '<td><b>Distanz</td><td><b>Punkte</td><td><b>Datum</td><td><b>Aufgabe</td><td><b>XContest</td></tr>'
+
+
 # function to get sums out of the status
 def get_value(html_string, tag_name, tag_end):
     if html_string.find(tag_name) == -1:
@@ -33,6 +35,7 @@ def get_value(html_string, tag_name, tag_end):
     value_start = html_string.find(tag_name)
     value_end = html_string.find(tag_end, value_start)
     return str(html_string)[value_start: value_end]
+
 
 # function to query Xcontest
 def query_xcontest(session: requests.Session, lng: float, lat: float, startdate, enddate):
@@ -72,16 +75,14 @@ except Exception as e:
     print(f'ERROR: {e}')
 print('data-query finished')
 
-# just to test
-# print(whole_content)
-
+# loop through the html
 while rank < max_rank:
     # We are looking for this: "<tr id="flight"
     if len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
         ranking = get_value(whole_content, '<tr id="flight', "</tr>")
         rank += 1
         # cut of the result from the rest
-        whole_content = str(whole_content)[whole_content.find('<tr id="flight')+10:len(whole_content)]
+        whole_content = str(whole_content)[whole_content.find('<tr id="flight') + 10:len(whole_content)]
 
         # get the pilot
         pilot = get_value(ranking, '<a class="plt"', '</a')
@@ -97,7 +98,16 @@ while rank < max_rank:
 
         # get the date
         date_rough = get_value(ranking, 'class="full"', '<em>')
-        date = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
+        date_str = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
+
+        # new flight?
+        flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
+        delta_date = today - flight_date
+        new_flag = ''
+        new_tag = ''
+        if delta_date.days <= 14:   # everything, newer than 2 weeks is taken as new.
+            new_tag = ' (neu)'
+            new_flag = ' class = "new"'
 
         # get the type
         type_rough = get_value(ranking, 'class="disc', '"><em')
@@ -112,10 +122,11 @@ while rank < max_rank:
         flight_link = get_value(ranking, 'flight detail" href', ' >')
         flight_link = str(flight_link)[21:len(flight_link) - 0]
 
-        print(rank, pilot_name, length_km, points_pts,date, flight_type, flight_link)
-        table_row = '<tr><td>' + str(rank) + '</td><td>' + pilot_name + '</td><td>' + length_km + ' km</td><td>'
-        table_row += points_pts + ' pts</td><td>'
-        table_row += date + '</td><td>' + flight_type + '</td><td><a href="https://www.xcontest.org'
+        print(rank, pilot_name, length_km, points_pts, date, flight_type, flight_link)
+        # write out the html-code
+        table_row = '<tr' + new_flag + '><td>' + str(rank) + new_tag + '</td><td>' + pilot_name + '</td><td>'
+        table_row += length_km + ' km</td><td>' + points_pts + ' pts</td><td>'
+        table_row += date_str + '</td><td>' + flight_type + '</td><td><a href="https://www.xcontest.org'
         table_row += flight_link + ' target="_blank">Details</a></td></tr>'
         html_output += table_row
 html_output += '</table>'
@@ -124,12 +135,12 @@ print(html_output)
 result_file = open('ranking_result.html', 'w')
 result_file.write(html_output)
 result_file.close()
-print ("created ranking")
+print("ranking created")
 
 # send it to DCZO-webserver
 session = ftplib.FTP('ftp.dczo.ch', constants.ftp_user, constants.ftp_pw)
-file = open('/home/solarmanager/xc_ranking/ranking_result.html','rb')                  # file to send
-session.storbinary('STOR ranking_result.html', file)     # send the file
-file.close()                                    # close file and FTP
+file = open('/home/solarmanager/xc_ranking/ranking_result.html', 'rb')  # file to send
+session.storbinary('STOR ranking_result.html', file)  # send the file
+file.close()  # close file and FTP
 session.quit()
-print ("files sent to DCZO")
+print("files sent to DCZO")
