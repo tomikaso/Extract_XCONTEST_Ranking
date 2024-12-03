@@ -1,13 +1,13 @@
 from datetime import date
 import time
+import requests
 today = date.today()
-ranking_path = 'club_ranking.html'  # adapt to file location
 max_rank = 10
 rank = 0
 points_sum = 0
 whole_content = ''
 html_output = '<table><tr><td><b>Rang</td><td><b>Pilot</td><td><b>Punkte</td><td><b>relevant</td></tr>'
-
+url = 'https://www.xcontest.org/switzerland/en/ranking-pg-club:1383'
 # function to get sums out of the status
 def get_value(html_string, tag_name, tag_end):
     if html_string.find(tag_name) == -1:
@@ -16,16 +16,12 @@ def get_value(html_string, tag_name, tag_end):
     value_end = html_string.find(tag_end, value_start)
     return str(html_string)[value_start: value_end]
 
-# Info for the user
-print('HTML-Sourcecode expectet in file: <club_ranking.html>')
-time.sleep(1)
+# try to get the data
+session = requests.Session()
+r = session.get(url, headers={'user-agent': 'dczo_club_ranking_alp_scheidegg'})
+whole_content = r.text
 
-# Sample the file to one string
-ranking_file = open(ranking_path, 'r', encoding="utf-8")
-file_content = ranking_file.readline()
-while file_content:
-    file_content = ranking_file.readline()
-    whole_content += file_content.strip()
+print('Call response: ', whole_content)
 
 # parse the content
 while rank < max_rank:
@@ -40,7 +36,7 @@ while rank < max_rank:
         # get the length
         points = str(ranking)[ranking.find('class="pts"')+20:len(ranking)]
         # ranked?
-        counting=''
+        counting = ''
         if ranking.find('not-ranked') == -1:
             counting = 'zählt'
             points_sum += float(points)
