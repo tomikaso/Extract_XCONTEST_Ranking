@@ -132,7 +132,7 @@ while rank < max_rank:
 html_output += '</table>'
 print(html_output)
 # write out status
-result_file = open('ranking_result.html', 'w')
+result_file = open('/home/solarmanager/xc_ranking/ranking_result.html', 'w')
 result_file.write(html_output)
 result_file.close()
 print("ranking created")
