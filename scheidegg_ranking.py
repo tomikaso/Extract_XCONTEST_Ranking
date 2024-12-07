@@ -4,7 +4,7 @@ from datetime import date
 import requests
 import ftplib
 import constants
-from PIL import Image, ImageDraw, ImageFont
+from pillow import Image, ImageDraw, ImageFont
 
 # Parameters
 RADIUS = 600
@@ -140,11 +140,10 @@ result_file.write(html_output)
 result_file.close()
 print("ranking created")
 # create new-flights-button. Number of new flights is in 'number'
-font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 48)
-img = Image.new("RGB", (960, 100), color=(240, 240, 250, 250))
-# create rectangle image
-img1 = ImageDraw.Draw(img) # overview image
-img1.text((160, 20), 'NEUESTE FLÜGE (' + str(int(number)) + ')', (50, 60, 120), font=font)
+font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42)
+img = Image.new("RGB", (960, 100), color=(254, 254, 254, 254))
+img1 = ImageDraw.Draw(img)  # image to represent the bottom with the number of new flights
+img1.text((160, 24), 'AKTUELLE FLÜGE (NEU: ' + str(int(number)) + ')', (50, 60, 120), font=font)
 img.save('/home/solarmanager/xc_ranking/new_flights_button.png')
 
 # send it to DCZO-webserver
