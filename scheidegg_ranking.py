@@ -4,6 +4,7 @@ from datetime import date
 import requests
 import ftplib
 import constants
+from PIL import Image, ImageDraw, ImageFont
 
 # Parameters
 RADIUS = 600
@@ -18,6 +19,7 @@ styles = '<style> html {font-family: "brandon-grotesque-n7","brandon-grotesque",
 ranking_path = 'ranking.html'  # adapt to file location
 max_rank = 20
 rank = 0
+number = 0
 # Variables
 today = date.today()
 
@@ -105,9 +107,10 @@ while rank < max_rank:
         delta_date = today - flight_date
         new_flag = ''
         new_tag = ''
-        if delta_date.days <= 14:   # everything, newer than 2 weeks is taken as new.
+        if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
             new_tag = ' (neu)'
             new_flag = ' class = "new"'
+            number = number + 1
 
         # get the type
         type_rough = get_value(ranking, 'class="disc', '"><em')
@@ -136,11 +139,20 @@ result_file = open('/home/solarmanager/xc_ranking/ranking_result.html', 'w')
 result_file.write(html_output)
 result_file.close()
 print("ranking created")
+# create new-flights-button. Number of new flights is in 'number'
+font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 48)
+img = Image.new("RGB", (960, 100), color=(240, 240, 250, 250))
+# create rectangle image
+img1 = ImageDraw.Draw(img) # overview image
+img1.text((160, 20), 'NEUESTE FLÜGE (' + str(int(number)) + ')', (50, 60, 120), font=font)
+img.save('/home/solarmanager/xc_ranking/new_flights_button.png')
 
 # send it to DCZO-webserver
 session = ftplib.FTP('ftp.dczo.ch', constants.ftp_user, constants.ftp_pw)
 file = open('/home/solarmanager/xc_ranking/ranking_result.html', 'rb')  # file to send
+file1 = open('/home/solarmanager/xc_ranking/new_flights_button.png', 'rb')  # file to send
 session.storbinary('STOR ranking_result.html', file)  # send the file
+session.storbinary('STOR new_flights_button.png', file1)  # send the file
 file.close()  # close file and FTP
 session.quit()
 print("files sent to DCZO")
