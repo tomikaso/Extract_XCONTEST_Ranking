@@ -4,7 +4,7 @@ from datetime import date
 import requests
 import ftplib
 import constants
-from pillow import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 # Parameters
 RADIUS = 600
@@ -64,7 +64,12 @@ assert XCONTEST_USER in auth_response.text, 'Auth failed, username not found in 
 lng = 8.943117
 lat = 47.304817
 
-startdate = '2024-10-01'
+# calculate start-date. the season always begins in October 10th month.
+if today.month >= 10:
+    y = today.year
+else:
+    y = today.year - 1
+startdate = date(y, 10, 1).strftime("%Y-%m-%d")
 enddate = today.strftime("%Y-%m-%d")
 
 print('Start: ', startdate, 'Enddate: ', enddate)
@@ -78,60 +83,59 @@ except Exception as e:
 print('data-query finished')
 
 # loop through the html
-while rank < max_rank:
+while rank < max_rank and len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
     # We are looking for this: "<tr id="flight"
-    if len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
-        ranking = get_value(whole_content, '<tr id="flight', "</tr>")
-        rank += 1
-        # cut of the result from the rest
-        whole_content = str(whole_content)[whole_content.find('<tr id="flight') + 10:len(whole_content)]
+    ranking = get_value(whole_content, '<tr id="flight', "</tr>")
+    rank += 1
+    # cut of the result from the rest
+    whole_content = str(whole_content)[whole_content.find('<tr id="flight') + 10:len(whole_content)]
 
-        # get the pilot
-        pilot = get_value(ranking, '<a class="plt"', '</a')
-        pilot_name = str(pilot)[2 + pilot.find('">'):len(pilot)]
+    # get the pilot
+    pilot = get_value(ranking, '<a class="plt"', '</a')
+    pilot_name = str(pilot)[2 + pilot.find('">'):len(pilot)]
 
-        # get the length
-        length = get_value(ranking, 'class="km"', '</strong')
-        length_km = str(length)[7 + length.find('strong>'):len(length)]
+    # get the length
+    length = get_value(ranking, 'class="km"', '</strong')
+    length_km = str(length)[7 + length.find('strong>'):len(length)]
 
-        # get the points
-        points = get_value(ranking, 'class="pts"', '</strong')
-        points_pts = str(points)[7 + points.find('strong>'):len(points)]
+    # get the points
+    points = get_value(ranking, 'class="pts"', '</strong')
+    points_pts = str(points)[7 + points.find('strong>'):len(points)]
 
-        # get the date
-        date_rough = get_value(ranking, 'class="full"', '<em>')
-        date_str = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
+    # get the date
+    date_rough = get_value(ranking, 'class="full"', '<em>')
+    date_str = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
 
-        # new flight?
-        flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
-        delta_date = today - flight_date
-        new_flag = ''
-        new_tag = ''
-        if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
-            new_tag = ' (neu)'
-            new_flag = ' class = "new"'
-            number = number + 1
+    # new flight?
+    flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
+    delta_date = today - flight_date
+    new_flag = ''
+    new_tag = ''
+    if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
+        new_tag = ' (neu)'
+        new_flag = ' class = "new"'
+        number = number + 1
 
-        # get the type
-        type_rough = get_value(ranking, 'class="disc', '"><em')
-        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fre':
-            flight_type = 'Freie Strecke'
-        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'FAI':
-            flight_type = 'FAI-Dreieck'
-        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fla':
-            flight_type = 'Flaches Dreieck'
+    # get the type
+    type_rough = get_value(ranking, 'class="disc', '"><em')
+    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fre':
+        flight_type = 'Freie Strecke'
+    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'FAI':
+        flight_type = 'FAI-Dreieck'
+    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fla':
+        flight_type = 'Flaches Dreieck'
 
-        # get the link
-        flight_link = get_value(ranking, 'flight detail" href', ' >')
-        flight_link = str(flight_link)[21:len(flight_link) - 0]
+    # get the link
+    flight_link = get_value(ranking, 'flight detail" href', ' >')
+    flight_link = str(flight_link)[21:len(flight_link) - 0]
 
-        print(rank, pilot_name, length_km, points_pts, date, flight_type, flight_link)
-        # write out the html-code
-        table_row = '<tr' + new_flag + '><td>' + str(rank) + new_tag + '</td><td>' + pilot_name + '</td><td>'
-        table_row += length_km + ' km</td><td>' + points_pts + ' pts</td><td>'
-        table_row += date_str + '</td><td>' + flight_type + '</td><td><a href="https://www.xcontest.org'
-        table_row += flight_link + ' target="_blank">Details</a></td></tr>'
-        html_output += table_row
+    print(rank, pilot_name, length_km, points_pts, date, flight_type, flight_link)
+    # write out the html-code
+    table_row = '<tr' + new_flag + '><td>' + str(rank) + new_tag + '</td><td>' + pilot_name + '</td><td>'
+    table_row += length_km + ' km</td><td>' + points_pts + ' pts</td><td>'
+    table_row += date_str + '</td><td>' + flight_type + '</td><td><a href="https://www.xcontest.org'
+    table_row += flight_link + ' target="_blank">Details</a></td></tr>'
+    html_output += table_row
 html_output += '</table>'
 print(html_output)
 # write out status
