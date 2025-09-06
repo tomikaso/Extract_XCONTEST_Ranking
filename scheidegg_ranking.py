@@ -7,7 +7,7 @@ import constants
 from PIL import Image, ImageDraw, ImageFont
 
 # Parameters
-RADIUS = 600
+RADIUS = 2000
 XCONTEST_USER = constants.XC_user
 XCONTEST_PASS = constants.XC_password
 
@@ -17,11 +17,12 @@ styles = '<style> html {font-family: "brandon-grotesque-n7","brandon-grotesque",
          'tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color: skyblue;} ' \
          '.new{background-color: cornsilk;} a:link {color: darkred; text-decoration: none;} </style>'
 ranking_path = 'ranking.html'  # adapt to file location
-max_rank = 20
+max_rank = 30
 rank = 0
 number = 0
 # Variables
 today = date.today()
+# today = date(2025, 7, 31)
 
 whole_content = ''
 flight_type = ''
@@ -39,9 +40,11 @@ def get_value(html_string, tag_name, tag_end):
     return str(html_string)[value_start: value_end]
 
 
-# function to query Xcontest
+# function to query XContest
 def query_xcontest(session: requests.Session, lng: float, lat: float, startdate, enddate):
-    url = f'https://www.xcontest.org/world/en/flights-search/?filter%5Bpoint%5D={lng}+{lat}&filter%5Bradius%5D={RADIUS}&filter%5Bdate_mode%5D=period&filter%5Bdate%5D={startdate}&filter%5Bdate_to%5D={enddate}2024-11&filter%5Bcatg%5D=FAI3&list%5Bsort%5D=pts&list%5Bdir%5D=down'
+    url = f'https://www.xcontest.org/world/en/flights-search/?filter%5Bpoint%5D={lng}+{lat}' \
+          f'&filter%5Bradius%5D={RADIUS}&filter%5Bdate_mode%5D=period&filter%5Bdate%5D={startdate}' \
+          f'&filter%5Bdate_to%5D={enddate}2024-11&filter%5Bcatg%5D=FAI3&list%5Bsort%5D=pts&list%5Bdir%5D=down'
 
     print('Request: ', url)
     r = session.get(url, headers={
@@ -143,6 +146,88 @@ result_file = open('/home/solarmanager/xc_ranking/ranking_result.html', 'w')
 result_file.write(html_output)
 result_file.close()
 print("ranking created")
+
+# ------------------------------------------------------------
+# get monthly champinon. Query XContest with the current month
+# ------------------------------------------------------------
+y = today.year
+m = today.month
+startdate = date(y, m, 1).strftime("%Y-%m-%d")  # always the first day of the month
+enddate = today.strftime("%Y-%m-%d")  # end date = current data
+
+print('Month-Champions-Start: ', startdate, 'Enddate: ', enddate)
+
+try:
+    whole_content = query_xcontest(session, lng, lat, startdate, enddate)
+except Exception as e:
+    # went wrong somehow
+    print(f'ERROR: {e}')
+print('data-query finished')
+
+# loop through the monthly-champions-html
+html_output = today.strftime("%B") + ','
+rank = 0
+while rank < 3 and len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
+    # We are looking for this: "<tr id="flight"
+    ranking = get_value(whole_content, '<tr id="flight', "</tr>")
+    rank += 1
+    # cut of the result from the rest
+    whole_content = str(whole_content)[whole_content.find('<tr id="flight') + 10:len(whole_content)]
+
+    # get the pilot
+    pilot = get_value(ranking, '<a class="plt"', '</a')
+    pilot_name = str(pilot)[2 + pilot.find('">'):len(pilot)]
+
+    # get the length
+    length = get_value(ranking, 'class="km"', '</strong')
+    length_km = str(length)[7 + length.find('strong>'):len(length)]
+
+    # get the points
+    points = get_value(ranking, 'class="pts"', '</strong')
+    points_pts = str(points)[7 + points.find('strong>'):len(points)]
+
+    # get the date
+    date_rough = get_value(ranking, 'class="full"', '<em>')
+    date_str = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
+
+    # new flight?
+    flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
+    delta_date = today - flight_date
+    if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
+        number = number + 1
+
+    # get the type
+    type_rough = get_value(ranking, 'class="disc', '"><em')
+    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fre':
+        flight_type = 'STR'
+    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'FAI':
+        flight_type = 'FAI'
+    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fla':
+        flight_type = 'FLD'
+
+    # get the link
+    flight_link = get_value(ranking, 'flight detail" href', ' >')
+    flight_link = str(flight_link)[21:len(flight_link) - 0]
+    print(rank, pilot_name, length_km, points_pts, date_str, flight_type, flight_link)
+    # write out the csv-data
+    table_row = pilot_name + ',' + date_str + ',' + length_km + ' km,' + points_pts + ' pts,'
+    table_row += flight_type + ',<a href="https://www.xcontest.org' + flight_link + ' target="_blank">Details</a>,'
+    html_output += table_row
+print(html_output)
+# read existing champions
+champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', "r")
+file_content = champions_file.readline()
+if file_content.find(today.strftime("%B")) > 0:  # find the name of the actual month and cut it off
+    file_content = str(file_content)[0:file_content.find(today.strftime("%B"))]
+
+# write out status
+
+champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', 'w')
+# champions_file = open('champions_data.txt', 'w')
+champions_file.write(file_content + html_output)
+champions_file.close()
+print("champion ranking created")
+
 # create new-flights-button. Number of new flights is in 'number'
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42)
 img = Image.new("RGB", (960, 100), color=(254, 254, 254, 254))
@@ -152,10 +237,14 @@ img.save('/home/solarmanager/xc_ranking/new_flights_button.png')
 
 # send it to DCZO-webserver
 session = ftplib.FTP('ftp.dczo.ch', constants.ftp_user, constants.ftp_pw)
-file = open('/home/solarmanager/xc_ranking/ranking_result.html', 'rb')  # file to send
+file0 = open('/home/solarmanager/xc_ranking/ranking_result.html', 'rb')  # file to send
 file1 = open('/home/solarmanager/xc_ranking/new_flights_button.png', 'rb')  # file to send
-session.storbinary('STOR ranking_result.html', file)  # send the file
+file2 = open('/home/solarmanager/xc_ranking/champions_data.txt', 'rb')  # file to send
+session.storbinary('STOR ranking_result.html', file0)  # send the file
 session.storbinary('STOR new_flights_button.png', file1)  # send the file
-file.close()  # close file and FTP
+session.storbinary('STOR champions_data.txt', file2)  # send the file
+file0.close()  # close file and FTP
+file1.close()
+file2.close()
 session.quit()
 print("files sent to DCZO")
