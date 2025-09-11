@@ -41,13 +41,13 @@ def get_value(html_string, tag_name, tag_end):
 
 
 # function to query XContest
-def query_xcontest(session: requests.Session, lng: float, lat: float, startdate, enddate):
-    url = f'https://www.xcontest.org/world/en/flights-search/?filter%5Bpoint%5D={lng}+{lat}' \
-          f'&filter%5Bradius%5D={RADIUS}&filter%5Bdate_mode%5D=period&filter%5Bdate%5D={startdate}' \
-          f'&filter%5Bdate_to%5D={enddate}2024-11&filter%5Bcatg%5D=FAI3&list%5Bsort%5D=pts&list%5Bdir%5D=down'
+def query_xcontest(session0: requests.Session, lng0: float, lat0: float, startdt, enddt):
+    url = f'https://www.xcontest.org/world/en/flights-search/?filter%5Bpoint%5D={lng0}+{lat0}' \
+          f'&filter%5Bradius%5D={RADIUS}&filter%5Bdate_mode%5D=period&filter%5Bdate%5D={startdt}' \
+          f'&filter%5Bdate_to%5D={enddt}2024-11&filter%5Bcatg%5D=FAI3&list%5Bsort%5D=pts&list%5Bdir%5D=down'
 
     print('Request: ', url)
-    r = session.get(url, headers={
+    r = session0.get(url, headers={
         'user-agent': 'dczo_club_ranking_alp_scheidegg',
     })
     return r.text
@@ -148,7 +148,7 @@ result_file.close()
 print("ranking created")
 
 # ------------------------------------------------------------
-# get monthly champinon. Query XContest with the current month
+# get monthly champion. Query XContest with the current month
 # ------------------------------------------------------------
 y = today.year
 m = today.month
@@ -168,50 +168,53 @@ print('data-query finished')
 html_output = today.strftime("%B") + ','
 rank = 0
 while rank < 3 and len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
-    # We are looking for this: "<tr id="flight"
-    ranking = get_value(whole_content, '<tr id="flight', "</tr>")
     rank += 1
-    # cut of the result from the rest
-    whole_content = str(whole_content)[whole_content.find('<tr id="flight') + 10:len(whole_content)]
+    if len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
+        # We are looking for this: "<tr id="flight"
+        ranking = get_value(whole_content, '<tr id="flight', "</tr>")
+        # cut of the result from the rest
+        whole_content = str(whole_content)[whole_content.find('<tr id="flight') + 10:len(whole_content)]
 
-    # get the pilot
-    pilot = get_value(ranking, '<a class="plt"', '</a')
-    pilot_name = str(pilot)[2 + pilot.find('">'):len(pilot)]
+        # get the pilot
+        pilot = get_value(ranking, '<a class="plt"', '</a')
+        pilot_name = str(pilot)[2 + pilot.find('">'):len(pilot)]
 
-    # get the length
-    length = get_value(ranking, 'class="km"', '</strong')
-    length_km = str(length)[7 + length.find('strong>'):len(length)]
+        # get the length
+        length = get_value(ranking, 'class="km"', '</strong')
+        length_km = str(length)[7 + length.find('strong>'):len(length)]
 
-    # get the points
-    points = get_value(ranking, 'class="pts"', '</strong')
-    points_pts = str(points)[7 + points.find('strong>'):len(points)]
+        # get the points
+        points = get_value(ranking, 'class="pts"', '</strong')
+        points_pts = str(points)[7 + points.find('strong>'):len(points)]
 
-    # get the date
-    date_rough = get_value(ranking, 'class="full"', '<em>')
-    date_str = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
+        # get the date
+        date_rough = get_value(ranking, 'class="full"', '<em>')
+        date_str = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
 
-    # new flight?
-    flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
-    delta_date = today - flight_date
-    if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
-        number = number + 1
+        # new flight?
+        flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
+        delta_date = today - flight_date
+        if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
+            number = number + 1
 
-    # get the type
-    type_rough = get_value(ranking, 'class="disc', '"><em')
-    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fre':
-        flight_type = 'STR'
-    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'FAI':
-        flight_type = 'FAI'
-    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fla':
-        flight_type = 'FLD'
+        # get the type
+        type_rough = get_value(ranking, 'class="disc', '"><em')
+        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fre':
+            flight_type = 'STR'
+        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'FAI':
+            flight_type = 'FAI'
+        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fla':
+            flight_type = 'FLD'
 
-    # get the link
-    flight_link = get_value(ranking, 'flight detail" href', ' >')
-    flight_link = str(flight_link)[21:len(flight_link) - 0]
-    print(rank, pilot_name, length_km, points_pts, date_str, flight_type, flight_link)
-    # write out the csv-data
-    table_row = pilot_name + ',' + date_str + ',' + length_km + ' km,' + points_pts + ' pts,'
-    table_row += flight_type + ',<a href="https://www.xcontest.org' + flight_link + ' target="_blank">Details</a>,'
+        # get the link
+        flight_link = get_value(ranking, 'flight detail" href', ' >')
+        flight_link = str(flight_link)[21:len(flight_link) - 0]
+        print(rank, pilot_name, length_km, points_pts, date_str, flight_type, flight_link)
+        # write out the csv-data
+        table_row = pilot_name + ',' + date_str + ',' + length_km + ' km,' + points_pts + ' pts,'
+        table_row += flight_type + ',<a href="https://www.xcontest.org' + flight_link + ' target="_blank">Details</a>,'
+    else:
+        table_row = '-,-,-,-,-,-,'  # just dashes, if there is no flight
     html_output += table_row
 print(html_output)
 # read existing champions
