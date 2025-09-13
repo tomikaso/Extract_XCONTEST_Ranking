@@ -1,6 +1,6 @@
 # Get Ranking, (c) Thomas Kamps with help of Danilo's code. Many thanks Danilo!!!
 # parses XCONTEST-html and extracts the first 10 places
-from datetime import date
+from datetime import date, timedelta
 import requests
 import ftplib
 import constants
@@ -150,8 +150,9 @@ print("ranking created")
 # ------------------------------------------------------------
 # get monthly champion. Query XContest with the current month
 # ------------------------------------------------------------
-y = today.year
-m = today.month
+yesterday = date.today() - timedelta(days=1)
+y = yesterday.year
+m = yesterday.month
 startdate = date(y, m, 1).strftime("%Y-%m-%d")  # always the first day of the month
 enddate = today.strftime("%Y-%m-%d")  # end date = current data
 
@@ -165,9 +166,9 @@ except Exception as e:
 print('data-query finished')
 
 # loop through the monthly-champions-html
-html_output = today.strftime("%B") + ','
+html_output = yesterday.strftime("%B") + ','
 rank = 0
-while rank < 3 and len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
+while rank < 5 and len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
     rank += 1
     if len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
         # We are looking for this: "<tr id="flight"

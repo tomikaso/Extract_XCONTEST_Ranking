@@ -1,0 +1,93 @@
+<body onload="load_champions()"></body>
+<script>
+const d = new Date();
+var winnerlist = new Array();
+var offset = 0;
+var monate = 0;
+async function load_champions()
+  {
+  let x = await fetch("/images/thomaskamps/champions_data.txt");
+  let y = await x.text();
+  winnerlist = y.split(',');
+  monate = Math.floor(winnerlist.length / 31);
+  offset = monate - 1;
+  display_champions(0);
+  }
+function display_champions(dir){
+  offset = offset + dir;
+  if(offset < 0){offset = monate - 1};
+  if(offset >= monate){offset = 0};
+  document.getElementById("month").innerHTML = winnerlist[offset * 31] + "-Champions";
+  for(t=0;t<=5;t++)
+    {
+                               document.getElementById('1' + t).innerHTML = winnerlist[t + offset * 31 + 1];
+                               document.getElementById('2' + t).innerHTML = winnerlist[t + offset * 31 + 7];
+                               document.getElementById('3' + t).innerHTML = winnerlist[t + offset * 31 + 13];
+        					   document.getElementById('4' + t).innerHTML = winnerlist[t + offset * 31 + 19];
+        					   document.getElementById('5' + t).innerHTML = winnerlist[t + offset * 31 + 25];
+  }
+}
+</script>
+<style> html {font-family: "brandon-grotesque-n7","brandon-grotesque", sans-serif; font-size: 10pt; ' \
+         'background: #eef6fa; color: #4f5a80; } table, td, th, a, p {font-size: 10pt; padding: 4pt;} ' \
+         'tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color: skyblue;} ' \
+         '.new{background-color: cornsilk;} a:link {color: darkred; text-decoration: none;} </style>
+<h3 id="month">Champions</h3>
+<button id="b1" onclick="display_champions(-1)" ><</button>
+<button id="b2" onclick="display_champions(1)" >></button>
+<table style="width:550px">
+    <tr>
+        <th>Nr.</th>
+        <th>Pilot/Pilotin</th>
+        <th>Datum</th>
+        <th>Distanz</th>
+        <th>Punkte</th>
+        <th>Typ</th>
+        <th>XContest</th>
+    </tr>
+    <tr>
+        <th>1.</th>
+        <td id="10"></td>
+        <td id="11"></td>
+        <td id="12"></td>
+        <td id="13"></td>
+        <td id="14"></td>
+        <td id="15"></td>
+    </tr>
+    <tr>
+        <th>2.</th>
+        <td id="20"></td>
+        <td id="21"></td>
+        <td id="22"></td>
+        <td id="23"></td>
+        <td id="24"></td>
+        <td id="25"></td>
+    </tr>
+    <tr>
+        <th>3.</th>
+        <td id="30"></td>
+        <td id="31"></td>
+        <td id="32"></td>
+        <td id="33"></td>
+        <td id="34"></td>
+        <td id="35"></td>
+    </tr>
+    <tr>
+        <th>3.</th>
+        <td id="40"></td>
+        <td id="41"></td>
+        <td id="42"></td>
+        <td id="43"></td>
+        <td id="44"></td>
+        <td id="45"></td>
+    </tr>
+    <tr>
+        <th>3.</th>
+        <td id="50"></td>
+        <td id="51"></td>
+        <td id="52"></td>
+        <td id="53"></td>
+        <td id="54"></td>
+        <td id="55"></td>
+    </tr>
+</table>
