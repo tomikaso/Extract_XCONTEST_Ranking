@@ -168,7 +168,7 @@ print('data-query finished')
 # loop through the monthly-champions-html
 html_output = yesterday.strftime("%B") + ','
 rank = 0
-while rank < 5 and len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
+while rank < 5:
     rank += 1
     if len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
         # We are looking for this: "<tr id="flight"
