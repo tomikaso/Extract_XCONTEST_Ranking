@@ -19,7 +19,7 @@ styles = '<style> html {font-family: "brandon-grotesque-n7","brandon-grotesque",
 ranking_path = 'ranking.html'  # adapt to file location
 max_rank = 30
 rank = 0
-number = 0
+new_flights = []
 # Variables
 today = date.today()
 # today = date(2025, 7, 31)
@@ -117,7 +117,7 @@ while rank < max_rank and len(get_value(whole_content, '<tr id="flight', "</tr>"
     if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
         new_tag = ' (neu)'
         new_flag = ' class = "new"'
-        number = number + 1
+        new_flights.append(length_km)
 
     # get the type
     type_rough = get_value(ranking, 'class="disc', '"><em')
@@ -196,7 +196,7 @@ while rank < 5:
         flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
         delta_date = today - flight_date
         if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
-            number = number + 1
+            new_flights.append(length_km)
 
         # get the type
         type_rough = get_value(ranking, 'class="disc', '"><em')
@@ -221,8 +221,8 @@ print(html_output)
 # read existing champions
 champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', "r")
 file_content = champions_file.readline()
-if file_content.find(today.strftime("%B")) > 0:  # find the name of the actual month and cut it off
-    file_content = str(file_content)[0:file_content.find(today.strftime("%B"))]
+if file_content.find(yesterday.strftime("%B")) > 0:  # find the name of the actual month and cut it off
+    file_content = str(file_content)[0:file_content.find(yesterday.strftime("%B"))]
 
 # write out status
 
@@ -232,11 +232,12 @@ champions_file.write(file_content + html_output)
 champions_file.close()
 print("champion ranking created")
 
-# create new-flights-button. Number of new flights is in 'number'
+# create new-flights-button.
+new_flights = list(set(new_flights))  # Number of new flights is in the length of this list
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42)
 img = Image.new("RGB", (960, 100), color=(254, 254, 254, 254))
 img1 = ImageDraw.Draw(img)  # image to represent the bottom with the number of new flights
-img1.text((160, 24), 'AKTUELLE FLÜGE (NEU: ' + str(int(number)) + ')', (50, 60, 120), font=font)
+img1.text((160, 24), 'AKTUELLE FLÜGE (NEU: ' + str(len(new_flights)) + ')', (50, 60, 120), font=font)
 img.save('/home/solarmanager/xc_ranking/new_flights_button.png')
 
 # send it to DCZO-webserver
