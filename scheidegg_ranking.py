@@ -166,7 +166,7 @@ except Exception as e:
 print('data-query finished')
 
 # loop through the monthly-champions-html
-html_output = yesterday.strftime("%B") + ','
+html_output = yesterday.strftime("%B-%y") + ','
 rank = 0
 while rank < 5:
     rank += 1
@@ -221,8 +221,8 @@ print(html_output)
 # read existing champions
 champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', "r")
 file_content = champions_file.readline()
-if file_content.find(yesterday.strftime("%B")) > 0:  # find the name of the actual month and cut it off
-    file_content = str(file_content)[0:file_content.find(yesterday.strftime("%B"))]
+if file_content.find(yesterday.strftime("%B-%y")) > 0:  # find the name of the actual month and cut it off
+    file_content = str(file_content)[0:file_content.find(yesterday.strftime("%B-%y"))]
 
 # write out status
 
