@@ -1,15 +1,106 @@
 # Get Ranking, (c) Thomas Kamps with help of Danilo's code. Many thanks Danilo!!!
-# parses XCONTEST-html and extracts the first 10 places
+# parses XCONTEST-RSS-Feed and extracts the first 30 places Many thanks to XContest team helping me :-)!!!
 from datetime import date, timedelta
 import requests
 import ftplib
-import constants
 from PIL import Image, ImageDraw, ImageFont
+import csv
+import constants
 
-# Parameters
-RADIUS = 2000
-XCONTEST_USER = constants.XC_user
-XCONTEST_PASS = constants.XC_password
+
+# get the old flights stored in a csv.
+flights = []
+csvfile = open('scheidegg_flights.csv', newline='', encoding='utf-8-sig')
+reader = csv.DictReader(csvfile, delimiter=';')
+# Put each flight as a dictionary in the flights-list.
+for row in reader:
+    flights.append(row)
+# save and close the file
+csvfile.close()
+
+url = 'https://www.xcontest.org/rss/flights/?world/en&site=Scheidegg&faiclass=3'
+max_rank = 30
+rank = 0
+rss_flights = []
+f_type = 'UND'
+
+
+# function to extract an XML-tag
+def get_value(html_string, tag_name, tag_end):
+    if html_string.find(tag_name) == -1:
+        return ''
+    value_start = html_string.find(tag_name) + len(tag_name)
+    value_end = html_string.find(tag_end, value_start)
+    return str(html_string)[value_start: value_end]
+
+
+# try to get the data from the RSS-Feed
+session = requests.Session()
+r = session.get(url, headers={'user-agent': 'dczo_club_ranking_alp_scheidegg'})
+whole_content = r.text
+print('Call response: ', whole_content)
+
+# loop through the RSS-feed
+while len(get_value(whole_content, '<item>', '</item>')) > 10:
+    # return the item
+    item = get_value(whole_content, '<item>', '</item>')
+    link = get_value(item, '<link>', '</link>')
+    f_date = get_value(item, '<title>', ' [')
+    name = get_value(item, '] ', '</title>')
+    distance = get_value(item, ' [', 'km ::')
+    pre_type = get_value(item, ':: ', ' ::')
+    if pre_type.find('free_flight') >= 0:
+        f_type = 'STR'
+    elif pre_type.find('free_triangle') >= 0:
+        f_type = 'FLD'
+    elif pre_type.find('fai_triangle') >= 0:
+        f_type = 'FAI'
+    points = get_value(item, pre_type + ' ::', 'p]')
+    rank += 1
+    # cut of the result from the rest
+    whole_content = str(whole_content)[whole_content.find('</item>') + 5:len(whole_content)]
+    print(rank, ': ', f_date, ', ', name, ', ', distance, ', ', f_type, ', ', points, ', ', link)
+    rss_flights.append({'flight_date': f_date.strip(), 'pilot': name.strip(), 'flight_type': f_type,
+                        'distance': distance.strip(), 'points': points.strip(), 'link': link.strip()})
+
+for flight in rss_flights:
+    print(flight)
+
+
+# Definition of the sorting
+def sorting_points(e):
+    return float(e['points'])
+
+
+# merge rss_flights into flights
+rss_index = 0
+new_flight = 1
+print('merging results')
+while rss_index < len(rss_flights):
+    rss_link = rss_flights[rss_index]['link']
+    for flight in flights:  # does the rss_flight already exist?
+        if flight['link'] == rss_link:
+            new_flight = 0
+    if new_flight == 1:
+        flights.append(rss_flights[rss_index])
+    rss_index = rss_index + 1
+print(len(flights))
+
+flights.sort(reverse=True, key=sorting_points)  # sorting so easy :-)
+
+for flight in flights:
+    print(flight)
+
+# saving the updated file
+csvfile = open('scheidegg_flights.csv', 'w', newline='', encoding='utf-8-sig')
+headers = ['flight_date', 'pilot', 'flight_type', 'distance', 'points', 'link']
+c = csv.DictWriter(csvfile, fieldnames=headers, delimiter=';')
+# write a header row
+c.writeheader()
+# write all rows from list to file and close it
+c.writerows(flights)
+csvfile.close()
+
 
 # Styles
 styles = '<style> html {font-family: "brandon-grotesque-n7","brandon-grotesque", sans-serif; font-size: 10pt; ' \
@@ -22,8 +113,6 @@ rank = 0
 new_flights = []
 # Variables
 today = date.today()
-# today = date(2025, 7, 31)
-
 whole_content = ''
 flight_type = ''
 html_output = styles + '<a>Stand: ' + today.strftime(
@@ -31,114 +120,25 @@ html_output = styles + '<a>Stand: ' + today.strftime(
 html_output += '<td><b>Distanz</td><td><b>Punkte</td><td><b>Datum</td><td><b>Aufgabe</td><td><b>XContest</td></tr>'
 
 
-# function to get sums out of the status
-def get_value(html_string, tag_name, tag_end):
-    if html_string.find(tag_name) == -1:
-        return ''
-    value_start = html_string.find(tag_name)
-    value_end = html_string.find(tag_end, value_start)
-    return str(html_string)[value_start: value_end]
-
-
-# function to query XContest
-def query_xcontest(session0: requests.Session, lng0: float, lat0: float, startdt, enddt):
-    url = f'https://www.xcontest.org/world/en/flights-search/?filter%5Bpoint%5D={lng0}+{lat0}' \
-          f'&filter%5Bradius%5D={RADIUS}&filter%5Bdate_mode%5D=period&filter%5Bdate%5D={startdt}' \
-          f'&filter%5Bdate_to%5D={enddt}2024-11&filter%5Bcatg%5D=FAI3&list%5Bsort%5D=pts&list%5Bdir%5D=down'
-
-    print('Request: ', url)
-    r = session0.get(url, headers={
-        'user-agent': 'dczo_club_ranking_alp_scheidegg',
-    })
-    return r.text
-
-
-# get the data and start here
-# Authenticate against XContest
-session = requests.Session()
-auth_response = session.post('https://www.xcontest.org/world/en/', data={
-    'login[username]': XCONTEST_USER,
-    'login[password]': XCONTEST_PASS,
-    'login[persist_login]': 'Y',
-})
-assert auth_response.status_code == 200, f'Auth failed, status code {auth_response.status_code}'
-assert XCONTEST_USER in auth_response.text, 'Auth failed, username not found in auth response body'
-# peek Scheidegg-Data
-lng = 8.943117
-lat = 47.304817
-
-# calculate start-date. the season always begins in October 10th month.
-if today.month >= 10:
-    y = today.year
-else:
-    y = today.year - 1
-startdate = date(y, 10, 1).strftime("%Y-%m-%d")
-enddate = today.strftime("%Y-%m-%d")
-
-print('Start: ', startdate, 'Enddate: ', enddate)
-
-print(f'{lat},{lng}')
-try:
-    whole_content = query_xcontest(session, lng, lat, startdate, enddate)
-except Exception as e:
-    # went wrong somehow
-    print(f'ERROR: {e}')
-print('data-query finished')
-
-# loop through the html
-while rank < max_rank and len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
-    # We are looking for this: "<tr id="flight"
-    ranking = get_value(whole_content, '<tr id="flight', "</tr>")
-    rank += 1
-    # cut of the result from the rest
-    whole_content = str(whole_content)[whole_content.find('<tr id="flight') + 10:len(whole_content)]
-
-    # get the pilot
-    pilot = get_value(ranking, '<a class="plt"', '</a')
-    pilot_name = str(pilot)[2 + pilot.find('">'):len(pilot)]
-
-    # get the length
-    length = get_value(ranking, 'class="km"', '</strong')
-    length_km = str(length)[7 + length.find('strong>'):len(length)]
-
-    # get the points
-    points = get_value(ranking, 'class="pts"', '</strong')
-    points_pts = str(points)[7 + points.find('strong>'):len(points)]
-
-    # get the date
-    date_rough = get_value(ranking, 'class="full"', '<em>')
-    date_str = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
-
+# loop through the flights
+while rank < min(max_rank, len(flights)):
     # new flight?
-    flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
+    flight_date = date(int(flights[rank]['flight_date'][6: 8]) + 2000, int(flights[rank]['flight_date'][3: 5]),
+                       int(flights[rank]['flight_date'][0: 2]))
     delta_date = today - flight_date
     new_flag = ''
     new_tag = ''
     if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
         new_tag = ' (neu)'
         new_flag = ' class = "new"'
-        new_flights.append(length_km)
-
-    # get the type
-    type_rough = get_value(ranking, 'class="disc', '"><em')
-    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fre':
-        flight_type = 'Freie Strecke'
-    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'FAI':
-        flight_type = 'FAI-Dreieck'
-    if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fla':
-        flight_type = 'Flaches Dreieck'
-
-    # get the link
-    flight_link = get_value(ranking, 'flight detail" href', ' >')
-    flight_link = str(flight_link)[21:len(flight_link) - 0]
-
-    print(rank, pilot_name, length_km, points_pts, date, flight_type, flight_link)
+        new_flights.append(flights[rank]['points'])
     # write out the html-code
-    table_row = '<tr' + new_flag + '><td>' + str(rank) + new_tag + '</td><td>' + pilot_name + '</td><td>'
-    table_row += length_km + ' km</td><td>' + points_pts + ' pts</td><td>'
-    table_row += date_str + '</td><td>' + flight_type + '</td><td><a href="https://www.xcontest.org'
-    table_row += flight_link + ' target="_blank">Details</a></td></tr>'
+    table_row = '<tr' + new_flag + '><td>' + str(rank + 1) + new_tag + '</td><td>' + flights[rank]['pilot']
+    table_row += '</td><td>' + flights[rank]['distance'] + ' km</td><td>' + flights[rank]['points'] + ' pts</td><td>'
+    table_row += flights[rank]['flight_date'] + '</td><td>' + flights[rank]['flight_type'] + '</td><td><a href="'
+    table_row += flights[rank]['link'] + '" target="_blank">Details</a></td></tr>'
     html_output += table_row
+    rank += 1
 html_output += '</table>'
 print(html_output)
 # write out status
@@ -147,87 +147,48 @@ result_file.write(html_output)
 result_file.close()
 print("ranking created")
 
-# ------------------------------------------------------------
-# get monthly champion. Query XContest with the current month
-# ------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# get monthly champion. Use the consolidated data with focus on the current month
+# -------------------------------------------------------------------------------
 yesterday = date.today() - timedelta(days=1)
 y = yesterday.year
 m = yesterday.month
 startdate = date(y, m, 1).strftime("%Y-%m-%d")  # always the first day of the month
-enddate = today.strftime("%Y-%m-%d")  # end date = current data
 
-print('Month-Champions-Start: ', startdate, 'Enddate: ', enddate)
-
-try:
-    whole_content = query_xcontest(session, lng, lat, startdate, enddate)
-except Exception as e:
-    # went wrong somehow
-    print(f'ERROR: {e}')
-print('data-query finished')
 
 # loop through the monthly-champions-html
 html_output = yesterday.strftime("%B-%y") + ','
 rank = 0
-while rank < 5:
-    rank += 1
-    if len(get_value(whole_content, '<tr id="flight', "</tr>")) > 10:
-        # We are looking for this: "<tr id="flight"
-        ranking = get_value(whole_content, '<tr id="flight', "</tr>")
-        # cut of the result from the rest
-        whole_content = str(whole_content)[whole_content.find('<tr id="flight') + 10:len(whole_content)]
-
-        # get the pilot
-        pilot = get_value(ranking, '<a class="plt"', '</a')
-        pilot_name = str(pilot)[2 + pilot.find('">'):len(pilot)]
-
-        # get the length
-        length = get_value(ranking, 'class="km"', '</strong')
-        length_km = str(length)[7 + length.find('strong>'):len(length)]
-
-        # get the points
-        points = get_value(ranking, 'class="pts"', '</strong')
-        points_pts = str(points)[7 + points.find('strong>'):len(points)]
-
-        # get the date
-        date_rough = get_value(ranking, 'class="full"', '<em>')
-        date_str = str(date_rough)[1 + date_rough.find('>'):len(date_rough) - 1]
-
-        # new flight?
-        flight_date = date(int(date_str[6: 8]) + 2000, int(date_str[3: 5]), int(date_str[0: 2]))
+champions = 0
+while rank < len(flights) and champions < 5:
+    flight_date = date(int(flights[rank]['flight_date'][6: 8]) + 2000, int(flights[rank]['flight_date'][3: 5]),
+                       int(flights[rank]['flight_date'][0: 2]))
+    if flight_date > date(y, m, 1):   # everything, in this month is relevant.
+        # write out the csv-data
+        table_row = flights[rank]['pilot'] + ',' + flights[rank]['flight_date'] + ',' + flights[rank]['distance'] \
+                    + ' km,' + flights[rank]['distance'] + ' p,' + flights[rank]['flight_type']
+        table_row += ',<a href="' + flights[rank]['link'] + '" target="_blank">Details</a>,'
+        html_output += table_row
+        champions += 1
         delta_date = today - flight_date
         if delta_date.days <= 7:   # everything, newer than 1 week is taken as new.
-            new_flights.append(length_km)
-
-        # get the type
-        type_rough = get_value(ranking, 'class="disc', '"><em')
-        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fre':
-            flight_type = 'STR'
-        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'FAI':
-            flight_type = 'FAI'
-        if str(type_rough)[7 + type_rough.find('title'):10 + type_rough.find('title')] == 'fla':
-            flight_type = 'FLD'
-
-        # get the link
-        flight_link = get_value(ranking, 'flight detail" href', ' >')
-        flight_link = str(flight_link)[21:len(flight_link) - 0]
-        print(rank, pilot_name, length_km, points_pts, date_str, flight_type, flight_link)
-        # write out the csv-data
-        table_row = pilot_name + ',' + date_str + ',' + length_km + ' km,' + points_pts + ' pts,'
-        table_row += flight_type + ',<a href="https://www.xcontest.org' + flight_link + ' target="_blank">Details</a>,'
-    else:
-        table_row = '-,-,-,-,-,-,'  # just dashes, if there is no flight
+            new_flights.append(flights[rank]['points'])
+    rank += 1
+while champions < 5:
+    table_row = '-,-,-,-,-,-,'  # just dashes, if there is no flight
     html_output += table_row
+    champions += 1
 print(html_output)
 # read existing champions
 champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', "r")
+champions_file = open('champions_data.txt', "r")
 file_content = champions_file.readline()
 if file_content.find(yesterday.strftime("%B-%y")) > 0:  # find the name of the actual month and cut it off
     file_content = str(file_content)[0:file_content.find(yesterday.strftime("%B-%y"))]
 
 # write out status
-
 champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', 'w')
-# champions_file = open('champions_data.txt', 'w')
+champions_file = open('champions_data.txt', 'w')
 champions_file.write(file_content + html_output)
 champions_file.close()
 print("champion ranking created")
