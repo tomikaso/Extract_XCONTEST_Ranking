@@ -10,7 +10,7 @@ import constants
 
 # get the old flights stored in a csv.
 flights = []
-csvfile = open('scheidegg_flights.csv', newline='', encoding='utf-8-sig')
+csvfile = open('/home/solarmanager/xc_ranking/scheidegg_flights.csv', newline='', encoding='utf-8-sig')
 reader = csv.DictReader(csvfile, delimiter=';')
 # Put each flight as a dictionary in the flights-list.
 for row in reader:
@@ -92,7 +92,7 @@ for flight in flights:
     print(flight)
 
 # saving the updated file
-csvfile = open('scheidegg_flights.csv', 'w', newline='', encoding='utf-8-sig')
+csvfile = open('/home/solarmanager/xc_ranking/scheidegg_flights.csv', 'w', newline='', encoding='utf-8-sig')
 headers = ['flight_date', 'pilot', 'flight_type', 'distance', 'points', 'link']
 c = csv.DictWriter(csvfile, fieldnames=headers, delimiter=';')
 # write a header row
@@ -115,8 +115,8 @@ new_flights = []
 today = date.today()
 whole_content = ''
 flight_type = ''
-html_output = styles + '<a>Stand: ' + today.strftime(
-    "%d.%m.%Y") + '</a><table><tr><td><b>Rang</td><td><b>Pilotin / Pilot</td>'
+html_output = styles + '<a>Stand: ' + today.strftime("%d.%m.%Y") + ', 6 Uhr' \
+              + '</a><table><tr><td><b>Rang</td><td><b>Pilotin / Pilot</td>'
 html_output += '<td><b>Distanz</td><td><b>Punkte</td><td><b>Datum</td><td><b>Aufgabe</td><td><b>XContest</td></tr>'
 
 
@@ -181,14 +181,14 @@ while champions < 5:
 print(html_output)
 # read existing champions
 champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', "r")
-champions_file = open('champions_data.txt', "r")
+champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', "r")
 file_content = champions_file.readline()
 if file_content.find(yesterday.strftime("%B-%y")) > 0:  # find the name of the actual month and cut it off
     file_content = str(file_content)[0:file_content.find(yesterday.strftime("%B-%y"))]
 
 # write out status
 champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', 'w')
-champions_file = open('champions_data.txt', 'w')
+champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', 'w')
 champions_file.write(file_content + html_output)
 champions_file.close()
 print("champion ranking created")
