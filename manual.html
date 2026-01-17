@@ -8,20 +8,11 @@
 <body>
 <h1>Xcontest-Rankings auf DCZO-Website aktualisieren</h1>
 <h3>Weiteste Flüge ab Scheidegg</h3>
-<a>1. Die folgende Xcontest-Seite besuchen. Xcontest-Login erforderlich: </a>
-<a href="https://www.xcontest.org/2023/world/en/flights-search/?filter%5Bpoint%5D=8.94307+47.3041&filter%5Bradius%5D=1000&filter%5Bmode%5D=START&filter%5Bdate_mode%5D=dmy&filter%5Bdate%5D=2024&filter%5Bvalue_mode%5D=dst&filter%5Bmin_value_dst%5D=&filter%5Bcatg%5D=FAI3&filter%5Broute_types%5D=&filter%5Bavg%5D=&filter%5Bpilot%5D=&list%5Bsort%5D=pts&list%5Bdir%5D=down" target="_blank">
-Link zu den Flügen ab der Scheidegg in 2024</a><br>
-<a>2. Seitenquelltext anzeigen (rechte Maustaste -> view page source). Diesen als html mit dem filenamen 'ranking.html' abspeichern.</a><br>
-<a>3. Python-Script 'ranking' im selben Verzeichnis starten. Das fertige html in die DCZO-Webseite kopieren, siehe Schreenshot</a>
+<p>Das Python Script Scheidegg-Ranking erzeugt ein html, welches auf der Webseite eingebunden wird und das die ersten 30 Plätze anzeigt.</p><br>
+<p>Eine zweite Datei Champinions_data.csv gibt die ersten 5 Plätze ab Startplatz aus. Die Darstellung auf der
+Webseite erfolgt durch JS. Das JS ist auf der DCZO-Webseite ersichtlich.</p>
 <br>
 <h3>Clubranking</h3>
-<a>1. Seitenquelltext der folgenden Seite aufrufen (kein Login erforderlich): </a><a href="https://www.xcontest.org/switzerland/en/ranking-pg-club:1383" target="_blank">Link Clubranking </a><br>
-<a>2. Seitenquelltext als html-file mit dem namen 'club_ranking.html' ablegen.</a><br>
-<a>3. Python-Script 'club_ranking' im selben Verzeichnis starten. -> das fertige html in die DCZO-Webseite kopieren.</a><br><br>
-<img src="insert_html1.jpg" alt="insert into website">
-<img src="insert_html2.jpg" alt="insert into website"><br>
-<a href="https://github.com/tomikaso/Extract_XCONTEST_Ranking" target="_blank">Codebase in Github</a>
-<p>The current version of the cade already calls the XCONTEST-Webserver. Pasting of the source-code is not necessary any longer</p>
-<p>Password and XContest-Username are in the constants: constants.XC_user / constants.XC_password</p>
+<p>Das Python Script club-Ranking erzeugt ein html, welches auf der Webseite eingebunden wird und das Club-Ranking anzeigt.</p><br><br>
 </body>
 </html>
