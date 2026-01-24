@@ -1,6 +1,7 @@
 # Get Ranking, (c) Thomas Kamps with help of Danilo's code. Many thanks Danilo!!!
 # parses XCONTEST-RSS-Feed and extracts the first 30 places Many thanks to XContest team helping me :-)!!!
 from datetime import date, timedelta
+import datetime
 import requests
 import ftplib
 from PIL import Image, ImageDraw, ImageFont
@@ -72,6 +73,17 @@ def sorting_points(e):
     return float(e['points'])
 
 
+def flight_svg(ftype):
+    svg = ftype
+    if ftype == "FAI":
+        svg = '<img src="/images/thomaskamps/svg/fai.svg">'
+    if ftype == "STR":
+        svg = '<img src="/images/thomaskamps/svg/str.svg">'
+    if ftype == "FLD":
+        svg = '<img src="/images/thomaskamps/svg/fld.svg">'
+    return svg
+
+
 # merge rss_flights into flights
 rss_index = 0
 new_flight = 1
@@ -113,11 +125,12 @@ rank = 0
 new_flights = []
 # Variables
 today = date.today()
+time_now = datetime.datetime.now()
 whole_content = ''
 flight_type = ''
-html_output = styles + '<a>Stand: ' + today.strftime("%d.%m.%Y") + ', 6 Uhr' \
+html_output = styles + '<a>Stand: ' + today.strftime("%d.%m.%Y") + ' ' + time_now.strftime("%H:%M") + ' Uhr' \
               + '</a><table><tr><td><b>Rang</td><td><b>Pilotin / Pilot</td>'
-html_output += '<td><b>Distanz</td><td><b>Punkte</td><td><b>Datum</td><td><b>Aufgabe</td><td><b>XContest</td></tr>'
+html_output += '<td><b>Distanz</td><td><b>Punkte</td><td><b>Datum</td><td><b>Typ</td><td><b>XContest</td></tr>'
 
 
 # loop through the flights
@@ -135,8 +148,8 @@ while rank < min(max_rank, len(flights)):
     # write out the html-code
     table_row = '<tr' + new_flag + '><td>' + str(rank + 1) + new_tag + '</td><td>' + flights[rank]['pilot']
     table_row += '</td><td>' + flights[rank]['distance'] + ' km</td><td>' + flights[rank]['points'] + ' pts</td><td>'
-    table_row += flights[rank]['flight_date'] + '</td><td>' + flights[rank]['flight_type'] + '</td><td><a href="'
-    table_row += flights[rank]['link'] + '" target="_blank">Details</a></td></tr>'
+    table_row += flights[rank]['flight_date'] + '</td><td>' + flight_svg(flights[rank]['flight_type'])
+    table_row += '</td><td><a href="' + flights[rank]['link'] + '" target="_blank">Details</a></td></tr>'
     html_output += table_row
     rank += 1
 html_output += '</table>'
@@ -181,13 +194,11 @@ while champions < 5:
 print(html_output)
 # read existing champions
 champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', "r")
-champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', "r")
 file_content = champions_file.readline()
 if file_content.find(yesterday.strftime("%B-%y")) > 0:  # find the name of the actual month and cut it off
     file_content = str(file_content)[0:file_content.find(yesterday.strftime("%B-%y"))]
 
 # write out status
-champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', 'w')
 champions_file = open('/home/solarmanager/xc_ranking/champions_data.txt', 'w')
 champions_file.write(file_content + html_output)
 champions_file.close()

@@ -1,14 +1,19 @@
-<body onload="load_champions()"></body>
 <script>
 const d = new Date();
 var winnerlist = new Array();
 var offset = 0;
 var monate = 0;
+setTimeout(function (){load_champions()}, 350);
 async function load_champions()
   {
   let x = await fetch("/images/thomaskamps/champions_data.txt");
   let y = await x.text();
   winnerlist = y.split(',');
+  for(j=0;j<=winnerlist.length;j++){
+    if(winnerlist[j] == "FAI"){winnerlist[j] = '<img src="/images/thomaskamps/svg/fai.svg">';}
+    if(winnerlist[j] == "STR"){winnerlist[j] = '<img src="/images/thomaskamps/svg/str.svg">';}
+    if(winnerlist[j] == "FLD"){winnerlist[j] = '<img src="/images/thomaskamps/svg/fld.svg">';}
+  }
   monate = Math.floor(winnerlist.length / 31);
   offset = monate - 1;
   display_champions(0);
@@ -33,8 +38,8 @@ function display_champions(dir){
          'tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color: skyblue;} ' \
          '.new{background-color: cornsilk;} a:link {color: darkred; text-decoration: none;} </style>
 <h3 id="month">Champions</h3>
-<button id="b1" onclick="display_champions(-1)" ><</button>
-<button id="b2" onclick="display_champions(1)" >></button>
+<button id="b1" onclick="display_champions(-1)"> &lt; </button>
+<button id="b2" onclick="display_champions(1)"> &gt; </button>
 <table style="width:550px">
     <tr>
         <th>Nr.</th>
