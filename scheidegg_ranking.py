@@ -179,7 +179,7 @@ while rank < len(flights) and champions < 5:
     if flight_date > date(y, m, 1):   # everything, in this month is relevant.
         # write out the csv-data
         table_row = flights[rank]['pilot'] + ',' + flights[rank]['flight_date'] + ',' + flights[rank]['distance'] \
-                    + ' km,' + flights[rank]['distance'] + ' p,' + flights[rank]['flight_type']
+                    + ' km,' + flights[rank]['points'] + ' p,' + flights[rank]['flight_type']
         table_row += ',<a href="' + flights[rank]['link'] + '" target="_blank">Details</a>,'
         html_output += table_row
         champions += 1
