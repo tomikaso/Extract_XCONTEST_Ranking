@@ -166,7 +166,6 @@ print("ranking created")
 yesterday = date.today() - timedelta(days=1)
 y = yesterday.year
 m = yesterday.month
-startdate = date(y, m, 1).strftime("%Y-%m-%d")  # always the first day of the month
 
 
 # loop through the monthly-champions-html
@@ -176,7 +175,7 @@ champions = 0
 while rank < len(flights) and champions < 5:
     flight_date = date(int(flights[rank]['flight_date'][6: 8]) + 2000, int(flights[rank]['flight_date'][3: 5]),
                        int(flights[rank]['flight_date'][0: 2]))
-    if flight_date > date(y, m, 1):   # everything, in this month is relevant.
+    if flight_date >= date(y, m, 1):   # everything, in this month is relevant.
         # write out the csv-data
         table_row = flights[rank]['pilot'] + ',' + flights[rank]['flight_date'] + ',' + flights[rank]['distance'] \
                     + ' km,' + flights[rank]['points'] + ' p,' + flights[rank]['flight_type']
